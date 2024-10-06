@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Submit Forfeit Notice</title>
+</head>
+<body>
+    <h1>Submit Forfeit Notice</h1>
+    <form action="http://localhost:8080/submit_forfeit" method="POST">
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email" required><br><br>
+
+        <label for="league">League Name:</label><br>
+        <input type="text" id="league" name="league" required><br><br>
+
+        <label for="team">Team Name:</label><br>
+        <input type="text" id="team" name="team" required><br><br>
+
+        <label for="game_date">Game Date:</label><br>
+        <input type="date" id="game_date" name="game_date" required><br><br>
+
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>

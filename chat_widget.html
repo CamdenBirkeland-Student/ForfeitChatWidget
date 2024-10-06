@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Forfeit Notice Chat Widget</title>
+    <style>
+        /* Basic styling for the chat widget */
+        #chat-container {
+            position: fixed;
+            bottom: 0;
+            right: 20px;
+            width: 300px;
+            font-family: Arial, sans-serif;
+        }
+
+        #chat-header {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px;
+            cursor: pointer;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+
+        #chat-box {
+            display: none;
+            border: 1px solid #007BFF;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            background-color: white;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        #chat-messages {
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+        }
+
+        #chat-input {
+            display: flex;
+            padding: 10px;
+        }
+
+        #chat-input input {
+            flex: 1;
+            padding: 5px;
+            border: 1px solid #007BFF;
+            border-radius: 5px;
+        }
+
+        #chat-input button {
+            padding: 5px 10px;
+            margin-left: 5px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .bot-message {
+            background-color: #f1f0f0;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+
+        .user-message {
+            background-color: #007BFF;
+            color: white;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="chat-header">Need Help? Chat with us!</div>
+    <div id="chat-box">
+        <div id="chat-messages">
+            <div class="bot-message">Hello! Let's submit your forfeit notice. What's your email?</div>
+        </div>
+        <div id="chat-input">
+            <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const chatHeader = document.getElementById('chat-header');
+    const chatBox = document.getElementById('chat-box');
+    const chatMessages = document.getElementById('chat-messages');
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
+
+    let step = 0;
+    let formData = {};
+
+    // Validate Email
+    function isValidEmail(email) {
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return regex.test(email);
+    }
+
+    // Validate Date
+    function isValidDate(date) {
+        const regex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!regex.test(date)) return false;
+        const parsedDate = new Date(date);
+        return parsedDate instanceof Date && !isNaN(parsedDate);
+    }
+
+    // Toggle chat box visibility
+    chatHeader.addEventListener('click', () => {
+        if (chatBox.style.display === 'none') {
+            chatBox.style.display = 'block';
+            userInput.focus();
+        } else {
+            chatBox.style.display = 'none';
+        }
+    });
+
+    // Send message on button click or Enter key
+    sendButton.addEventListener('click', handleSend);
+    userInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            handleSend();
+        }
+    });
+
+    function handleSend() {
+        const input = userInput.value.trim();
+        if (input === '') return;
+        appendUserMessage(input);
+        userInput.value = '';
+        handleUserInput(input);
+    }
+
+    function appendBotMessage(message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'bot-message';
+        messageDiv.textContent = message;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function appendUserMessage(message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'user-message';
+        messageDiv.textContent = message;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function botMessage(message) {
+        setTimeout(() => {
+            appendBotMessage(message);
+        }, 500);
+    }
+
+    function handleUserInput(input) {
+        switch (step) {
+            case 0:
+                if (!isValidEmail(input)) {
+                    botMessage("Please enter a valid email address.");
+                    return;
+                }
+                formData.email = input;
+                botMessage("Great! What's the league name?");
+                step++;
+                break;
+            case 1:
+                formData.league = input;
+                botMessage("Thanks! What's your team name?");
+                step++;
+                break;
+            case 2:
+                formData.team = input;
+                botMessage("Got it! What is the game date? (Please use YYYY-MM-DD format)");
+                step++;
+                break;
+            case 3:
+                if (!isValidDate(input)) {
+                    botMessage("Please enter a valid date in YYYY-MM-DD format.");
+                    return;
+                }
+                formData.game_date = input;
+                botMessage("Thank you! Submitting your forfeit notice...");
+                step++;
+                submitFormData();
+                break;
+            default:
+                botMessage("If you need further assistance, feel free to reach out!");
+        }
+    }
+
+    function submitFormData() {
+        fetch('http://localhost:8080/submit_forfeit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server responded with status ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(data => {
+            botMessage("Your forfeit notice has been received. Have a nice day!");
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            botMessage("There was an error submitting your forfeit notice. Please try again later.");
+        });
+    }
+</script>
+
+</body>
+</html>
